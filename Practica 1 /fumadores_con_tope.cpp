@@ -12,6 +12,7 @@ using namespace SEM ;
 const int numero_fumadores = 3;
 const int ingredientes_totales = 100;
 Semaphore *semFumadores[numero_fumadores], semEstanquero(0);
+bool keep_going;
 
 //**********************************************************************
 // plantilla de función para generar un entero aleatorio uniformemente
@@ -34,11 +35,14 @@ void funcion_hebra_estanquero(  )
   for (int i=0; i<ingredientes_totales; i++)
   {
     int ingrediente = aleatorio<0, numero_fumadores-1>();
-    cout << "\tEstanquero: " << ingrediente << endl;
+    cout << "\tEstanquero: " << ingrediente << " (en total " << i << ")" << endl;
     semFumadores[ingrediente]->sem_signal();
     semEstanquero.sem_wait();
   }
-
+  keep_going = false;
+  for (int i=0; i<numero_fumadores; i++) {
+    semFumadores[i]->sem_signal();
+  }
 }
 
 //-------------------------------------------------------------------------
@@ -68,11 +72,13 @@ void fumar( int num_fumador )
 // función que ejecuta la hebra del fumador
 void  funcion_hebra_fumador( int num_fumador )
 {
-   while( true )
+   while( keep_going )
    {
      semFumadores[num_fumador]->sem_wait();
-     semEstanquero.sem_signal();
-     fumar(num_fumador);
+     if (keep_going) {
+       semEstanquero.sem_signal();
+       fumar(num_fumador);
+     }
    }
 }
 
@@ -85,11 +91,16 @@ int main()
   }
 
   thread FThreads[numero_fumadores], estanquero (funcion_hebra_estanquero);
+  keep_going = true;
 
   for (int i=0; i<numero_fumadores; i++) {
     FThreads[i] = thread ( funcion_hebra_fumador, i);
   }
+
+  estanquero.join();
   for (int i=0; i<numero_fumadores; i++) {
     FThreads[i].join();
   }
+
+  cout << "Fin del programa con todas las hebras terminadas." << endl;
 }
