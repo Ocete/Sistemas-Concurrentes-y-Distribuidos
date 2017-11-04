@@ -1,3 +1,5 @@
+# José Antonio Álvarez Ocete
+# Yábir García Benchakhtir
 # ****** Directorios ********
 INCLUDE   = include
 OBJ       = obj
