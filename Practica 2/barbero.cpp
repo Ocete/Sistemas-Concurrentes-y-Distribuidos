@@ -97,7 +97,7 @@ void MonitorBarbero::CortarPelo(int i_cliente) {
 void MonitorBarbero::SiguienteCliente() {
   if (cond_clientes.empty()) {
     cout << "\t\t\tEl barbero duerme" << endl;
-    cond_barbero.wait();
+    cond_barbero.wait(); 
   } else {
     cond_clientes.signal();
   }
