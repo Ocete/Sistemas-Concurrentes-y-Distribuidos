@@ -55,7 +55,8 @@ void CortarPeloACliente() {
 }
 
 void EsperarFueraBarberia() {
-  EsperaAleatoria();
+  chrono::milliseconds espera( aleatorio<100,400>() );
+  this_thread::sleep_for(espera);
 }
 
 // ****************************************************************************
@@ -64,9 +65,11 @@ private:
   CondVar cond_clientes, cond_barberos[num_barberos], cond_silla[num_barberos];
   bool silla_vacia[num_barberos];
   int BuscarSitio();
+  const int MAX_ESPERA;
+  int clientes_esperando;
  public:
    MonitorBarbero ();
-   void CortarPelo(int i_cliente);
+   bool CortarPelo(int i_cliente);
    void SiguienteCliente(int i_barbero);
    void FinCliente(int i_barbero);
 } ;
@@ -86,7 +89,7 @@ int MonitorBarbero::BuscarSitio ()
 }
 // -----------------------------------------------------------------------------
 
-MonitorBarbero::MonitorBarbero ()
+MonitorBarbero::MonitorBarbero () : MAX_ESPERA(3)
 {
   cond_clientes = newCondVar();
   for (int i=0; i<num_barberos; i++) {
@@ -94,21 +97,29 @@ MonitorBarbero::MonitorBarbero ()
     cond_silla[i] = newCondVar();
     silla_vacia[i] = true;
   }
+  clientes_esperando = 0;
 }
 // -----------------------------------------------------------------------------
 
-void MonitorBarbero::CortarPelo(int i_cliente) {
+bool MonitorBarbero::CortarPelo(int i_cliente) {
   cout << "Cliente " << i_cliente << " entra a la barberia" << endl;
+  if (clientes_esperando >= MAX_ESPERA) {
+    cout << "Cliente " << i_cliente << " va a darse una vuetla" << endl;
+    return false;
+  }
+  clientes_esperando++;
   int silla = BuscarSitio();
   if (!cond_clientes.empty() || silla == -1) {
     cond_clientes.wait();
   }
+  clientes_esperando--;
   silla = BuscarSitio();
   silla_vacia[silla] = false;
   cond_barberos[silla].signal();
   cout << "Cliente " << i_cliente << " se sienta" << endl;
   cond_silla[silla].wait();
   cout << "Cliente " << i_cliente << " se levanta" << endl;
+  return true;
 }
 // -----------------------------------------------------------------------------
 
