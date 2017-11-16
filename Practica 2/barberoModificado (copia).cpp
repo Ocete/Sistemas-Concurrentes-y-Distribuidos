@@ -25,7 +25,9 @@ using namespace HM;
 using namespace std ;
 
 static const int num_clientes = 10;
-
+static const int num_barberos = 3;
+int clientes_esperando;
+static const int MAX_ESPERA = 3;
 
 //**********************************************************************
 // plantilla de función para generar un entero aleatorio uniformemente
@@ -54,75 +56,94 @@ void CortarPeloACliente() {
   EsperaAleatoria();
 }
 
-void EsperarFueraBarberia(int i_cliente) {
-  EsperaAleatoria();
+void EsperarFueraBarberia() {
+  chrono::milliseconds espera( aleatorio<40,400>() );
+  this_thread::sleep_for( espera );
 }
 
-//**********************************************************************
+// ****************************************************************************
 class MonitorBarbero : public HoareMonitor {
 private:
-  CondVar cond_clientes, cond_barbero, cond_silla;
-  bool silla_vacia;
-
+  CondVar cond_clientes, cond_barberos[num_barberos], cond_silla[num_barberos];
+  bool silla_vacia[num_barberos];
+  int BuscarSitio();
  public:
    MonitorBarbero ();
    void CortarPelo(int i_cliente);
-   void SiguienteCliente();
-   void FinCliente();
+   void SiguienteCliente(int i_barbero);
+   void FinCliente(int i_barbero);
 } ;
+// -----------------------------------------------------------------------------
+
+int MonitorBarbero::BuscarSitio ()
+{
+  int hueco = -1, i = 0;
+  while (hueco == -1 && i < num_barberos) {
+    if (silla_vacia[i]) {
+      hueco = i;
+    }
+    i++;
+  }
+
+  return hueco;
+}
 // -----------------------------------------------------------------------------
 
 MonitorBarbero::MonitorBarbero ()
 {
-  silla_vacia = true;
   cond_clientes = newCondVar();
-  cond_barbero = newCondVar();
-  cond_silla = newCondVar();
+  for (int i=0; i<num_barberos; i++) {
+    cond_barberos[i] = newCondVar();
+    cond_silla[i] = newCondVar();
+    silla_vacia[i] = true;
+  }
+  clientes_esperando = 0;
 }
 // -----------------------------------------------------------------------------
 
 void MonitorBarbero::CortarPelo(int i_cliente) {
   cout << "Cliente " << i_cliente << " entra a la barberia" << endl;
-  if (!cond_clientes.empty() || !silla_vacia) {
+  clientes_esperando++;
+  int silla = BuscarSitio();
+  if (!cond_clientes.empty() || silla == -1) {
     cond_clientes.wait();
   }
-  silla_vacia = false;
-  cond_barbero.signal();
+  clientes_esperando--;
+  silla = BuscarSitio();
+  silla_vacia[silla] = false;
+  cond_barberos[silla].signal();
   cout << "Cliente " << i_cliente << " se sienta" << endl;
-  cond_silla.wait();
+  cond_silla[silla].wait();
   cout << "Cliente " << i_cliente << " se levanta" << endl;
 }
 // -----------------------------------------------------------------------------
 
-void MonitorBarbero::SiguienteCliente() {
+void MonitorBarbero::SiguienteCliente(int i_barbero) {
   if (cond_clientes.empty()) {
-    cout << "\t\t\tEl barbero duerme" << endl;
-    cond_barbero.wait();
+    cout << "\t\t\tEl barbero " << i_barbero << " duerme" << endl;
+    cond_barberos[i_barbero].wait();
+    cout << "\t\t\tEl barbero " << i_barbero << " se despierta" << endl;
   } else {
     cond_clientes.signal();
   }
-  cout << "\t\t\tEl barbero sienta un nuevo cliente" << endl;
+  cout << "\t\t\tEl barbero " << i_barbero << " sienta un nuevo cliente" << endl;
 }
 // -----------------------------------------------------------------------------
 
-void MonitorBarbero::FinCliente() {
-  cout << "\t\t\tEl barbero despide a un cliente" << endl;
-  silla_vacia = true;
-  cond_silla.signal();
+void MonitorBarbero::FinCliente(int i_barbero) {
+  cout << "\t\t\tEl barbero " << i_barbero << " despide a un cliente" << endl;
+  silla_vacia[i_barbero] = true;
+  cond_silla[i_barbero].signal();
 }
 // -----------------------------------------------------------------------------
 
-void funcion_hebra_barbero(MRef<MonitorBarbero> barberia)
+void funcion_hebra_barbero(MRef<MonitorBarbero> barberia, int i_barbero)
 {
-  int i = 0;
-  while( i < 1000 )
-  {
-    barberia->SiguienteCliente();
+  while ( true ) {
+    barberia->SiguienteCliente(i_barbero);
     CortarPeloACliente();
-    barberia->FinCliente();
-    i++;
+    barberia->FinCliente(i_barbero);
   }
-  cout << "FFFFFFFFFFFFFFFFFFFFFIIIIIIIIIIIIIIIIIIIIINNNNNNNNNNNNNNNNN" << endl;
 }
 
 //----------------------------------------------------------------------
@@ -131,8 +152,13 @@ void  funcion_hebra_cliente( MRef<MonitorBarbero> barberia, int i_cliente )
 {
    while( true )
    {
+     while (clientes_esperando >= MAX_ESPERA) {
+       cout << "Cliente " << i_cliente << " va a darse una vuelta" << endl;
+       //this_thread::sleep_for(chrono::seconds(1));
+       EsperarFueraBarberia();
+     }
      barberia->CortarPelo(i_cliente);
-     EsperarFueraBarberia(i_cliente);
+     EsperarFueraBarberia();
    }
 }
 //----------------------------------------------------------------------
@@ -141,12 +167,19 @@ int main()
 {
    auto monitor = Create<MonitorBarbero>();
 
-   thread CThreads[num_clientes], barbero (funcion_hebra_barbero, monitor);
+   thread clienteThreads[num_clientes], barberoThreads[num_barberos];
 
+   for (int i=0; i<num_barberos; i++) {
+     barberoThreads[i] = thread ( funcion_hebra_barbero, monitor, i);
+   }
+   EsperaAleatoria();
    for (int i=0; i<num_clientes; i++) {
-     CThreads[i] = thread ( funcion_hebra_cliente, monitor, i);
+     clienteThreads[i] = thread ( funcion_hebra_cliente, monitor, i);
    }
    for (int i=0; i<num_clientes; i++) {
-     CThreads[i].join();
+     clienteThreads[i].join();
+   }
+   for (int i=0; i<num_barberos; i++) {
+     barberoThreads[i].join();
    }
 }

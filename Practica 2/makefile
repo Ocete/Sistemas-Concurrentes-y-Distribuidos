@@ -5,7 +5,7 @@ compilador:=g++
 opcionesc:= -std=c++11 -pthread -I.
 i:= HoareMonitor.cpp
 
-all : fumadores barbero
+all : fumadores barbero barberoModificado
 
 fumadores: fumadores.cpp $(hmonsrcs)
 	$(compilador) $(opcionesc)  -o $@ $< HoareMonitor.cpp
@@ -13,6 +13,8 @@ fumadores: fumadores.cpp $(hmonsrcs)
 barbero: barbero.cpp $(hmonsrcs)
 	$(compilador) $(opcionesc)  -o $@ $< HoareMonitor.cpp
 
+barberoModificado: barberoModificado.cpp $(hmonsrcs)
+	$(compilador) $(opcionesc)  -o $@ $< HoareMonitor.cpp
 
 clean:
-	rm -f monitor_em barrera1_sc barrera2_sc barrera2_su prodcons1_sc prodcons2_sc prodcons2_su
+	rm -f fumadores barbero barberoModificado
