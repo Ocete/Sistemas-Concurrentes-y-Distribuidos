@@ -24,8 +24,6 @@ x6: intercambio_sincrono_exe
 x7: intercambio_nobloq_exe
 	mpirun -np 8 ./$<
 
-
-
 %_exe: %.cpp
 	$(comp) $< -o $@
 
