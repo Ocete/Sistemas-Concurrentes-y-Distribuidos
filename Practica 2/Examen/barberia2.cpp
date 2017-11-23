@@ -25,7 +25,7 @@ using namespace HM;
 using namespace std ;
 
 static const int num_clientes = 10;
-static const int num_barberos = 3;
+static const int num_barberos = 1;
 
 //**********************************************************************
 // plantilla de función para generar un entero aleatorio uniformemente
@@ -101,12 +101,13 @@ MonitorBarbero::MonitorBarbero () : MAX_ESPERA(3)
 bool MonitorBarbero::CortarPelo(int i_cliente) {
   cout << "Cliente " << i_cliente << " entra a la barberia" << endl;
   if (clientes_esperando >= MAX_ESPERA) {
-    cout << "Cliente " << i_cliente << " va a darse una vuetla" << endl;
+    cout << "Cliente " << i_cliente << " está tremendamente enfadado con el servicio recibido." << endl;
     return false;
   }
   clientes_esperando++;
   int silla = BuscarSitio();
   if (!cond_clientes.empty() || silla == -1) {
+    cout << "Cliente " << i_cliente << " entra en la sala de espera" << endl;
     cond_clientes.wait();
   }
   clientes_esperando--;
@@ -169,7 +170,7 @@ int main()
    for (int i=0; i<num_barberos; i++) {
      barberoThreads[i] = thread ( funcion_hebra_barbero, monitor, i);
    }
-   EsperaAleatoria(true); // Para que los barberos tengan tiempo para dormirse
+   EsperaAleatoria(true); // Para que los barberos tengan tiempo de dormirse.
    for (int i=0; i<num_clientes; i++) {
      clienteThreads[i] = thread ( funcion_hebra_cliente, monitor, i);
    }
