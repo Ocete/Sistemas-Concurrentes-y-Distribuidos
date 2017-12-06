@@ -25,6 +25,9 @@ f: filosofos_exe
 fc: filosofos-cam_exe
 	mpirun -np 11 ./$<
 
+prodconsModificado: prodconsModificado_exe
+	mpirun -np 10 ./$<
+
 %_exe: %.cpp
 	$(compilador) $(flagsc) -o $@ $<
 
