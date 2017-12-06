@@ -4,28 +4,10 @@
 compilador := mpicxx -std=c++11
 flagsc     := -g -Wall
 
-pc: prodcons_exe
-	mpirun -np  3 ./$<
-
-pc2: prodcons2_exe
-	mpirun -np  3 ./$<
-
-pcm: prodcons2-mu_exe
+prodcons: prodcons_exe
 	mpirun -np  10 ./$<
 
-fp: filosofos-plantilla_exe
-	mpirun -np 10 ./$<
-
-fi: filosofos-interb_exe
-	mpirun -np 10 ./$<
-
-f: filosofos_exe
-	mpirun -np 10 ./$<
-
-fc: filosofos-cam_exe
-	mpirun -np 11 ./$<
-
-prodconsModificado: prodconsModificado_exe
+filosofos: filosofos_exe
 	mpirun -np 10 ./$<
 
 %_exe: %.cpp
