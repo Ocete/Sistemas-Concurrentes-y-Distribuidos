@@ -7,8 +7,14 @@ flagsc     := -g -Wall
 prodcons: prodcons_exe
 	mpirun -np  10 ./$<
 
+filosofos-interb: filosofos-interb_exe
+	mpirun -np 10 ./$<
+
 filosofos: filosofos_exe
 	mpirun -np 10 ./$<
+
+filosofos-cam: filosofos-cam_exe
+	mpirun -np 11 ./$<
 
 %_exe: %.cpp
 	$(compilador) $(flagsc) -o $@ $<
