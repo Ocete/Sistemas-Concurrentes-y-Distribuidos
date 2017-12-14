@@ -16,6 +16,9 @@ filosofos: filosofos_exe
 filosofos-cam: filosofos-cam_exe
 	mpirun -np 11 ./$<
 
+filosofos-cam-Modificado: filosofos-cam-Modificado_exe
+	mpirun -np 11 ./$<
+
 %_exe: %.cpp
 	$(compilador) $(flagsc) -o $@ $<
 
