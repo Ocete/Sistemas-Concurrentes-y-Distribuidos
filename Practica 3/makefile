@@ -16,7 +16,10 @@ filosofos: filosofos_exe
 filosofos-cam: filosofos-cam_exe
 	mpirun -np 11 ./$<
 
-filosofos-cam-Modificado: filosofos-cam-Modificado_exe
+filosofos-cam-Modificado-NoSincrono: filosofos-cam-Modificado-NoSincrono_exe
+	mpirun -np 11 ./$<
+
+filosofos-cam-Modificado-ParImpar: filosofos-cam-Modificado-ParImpar_exe
 	mpirun -np 11 ./$<
 
 %_exe: %.cpp
